@@ -1,16 +1,21 @@
-# NativeEntityExtractor
+# Swift Native Entity Extractor
 
-A comprehensive Swift package for extracting named entities and linguistic features using Apple's native Natural Language framework (NLTagger) and NSDataDetector.
+Extract named entities and linguistic features from text using Apple's native frameworks — `NLTagger` (Natural Language) and `NSDataDetector`. No network calls, no third-party models: people, places, organizations, dates, links, phone numbers, and addresses are recognized entirely on-device through ergonomic `String` extensions.
 
 ## Features
 
-- 🏷 **Named Entity Recognition** - Extract people, places, and organizations
-- 📅 **Data Detection** - Find dates, URLs, emails, phone numbers, and addresses
-- 🌍 **Language Detection** - Identify languages with confidence scores
-- 📝 **Linguistic Analysis** - Parts of speech, lemmatization
-- 😊 **Sentiment Analysis** - Positive/negative/neutral classification (iOS 13+)
-- 📍 **Address Parsing** - Extract street, city, state, ZIP components
-- 🔗 **Zero Dependencies** - Uses only native iOS/macOS frameworks
+- 🎯 **Named entities** — detects personal names, place names, and organization names via `NLTagger`
+- 📅 **Data detection** — dates, links (URLs/emails), phone numbers, addresses, and transit info via `NSDataDetector`
+- 🏠 **Address components** — structured street/city/state/ZIP/country accessors plus a `formattedAddress` helper
+- 🔤 **Parts of speech** — nouns, verbs, adjectives, adverbs, and more lexical classes
+- 🌱 **Lemmatization** — base-form (lemma) for each word
+- 🌍 **Language detection** — dominant language plus ranked language hypotheses
+- 😊 **Sentiment analysis** — paragraph sentiment score with a negative/neutral/positive label
+- 🧩 **String extensions** — `entities`, `namedEntities`, `dataDetectorEntities`, `partsOfSpeech`, `lemmas`, `detectedLanguage`, `sentiment`
+- 🛠️ **Static API** — call `NativeEntityExtractor` methods directly for fine-grained control
+- 🧱 **Rich entity model** — `NativeEntity` carries text, type, range, and type-specific metadata (date, URL, phone, address)
+- 🔒 **On-device & private** — no network, no API keys, built on Apple frameworks
+- 📦 **Zero dependencies** — pure Foundation + NaturalLanguage
 
 ## Requirements
 
@@ -22,221 +27,115 @@ A comprehensive Swift package for extracting named entities and linguistic featu
 
 ### Swift Package Manager
 
-Add to your `Package.swift`:
-
 ```swift
 dependencies: [
-    .package(url: "https://github.com/yourusername/NativeEntityExtractor.git", from: "1.0.0")
+    .package(url: "https://github.com/arraypress/swift-native-entity-extractor.git", from: "1.0.0")
 ]
 ```
 
-Or in Xcode:
-1. File → Add Package Dependencies
-2. Enter repository URL
-3. Select version
-
 ## Usage
 
-### Extract Named Entities
+### String extensions
 
 ```swift
 import NativeEntityExtractor
 
-let text = "Tim Cook is the CEO of Apple in Cupertino."
-let entities = text.namedEntities
+let text = "Tim Cook visited Paris on March 15th. Call +1-555-0100 or apple.com."
 
-for entity in entities {
-    print("\(entity.text): \(entity.type)")
+// All entities (named + data-detector), sorted by position
+for entity in text.entities {
+    print("\(entity.type): \(entity.text)")
 }
-// Output:
-// Tim Cook: personalName
-// Apple: organizationName  
-// Cupertino: placeName
+
+// Just named entities
+let people = text.namedEntities.filter { $0.type == .personalName }
+
+// Just data-detector entities
+for entity in text.dataDetectorEntities {
+    print("\(entity.type): \(entity.text)")
+}
 ```
 
-### Detect Data Types
+### Linguistic features
 
 ```swift
-let text = "Call me at 555-0123 or email john@example.com. Meeting on Dec 31, 2024."
-let dataEntities = text.dataDetectorEntities
+let text = "The quick brown foxes were running."
 
-for entity in dataEntities {
-    switch entity.type {
-    case .date:
-        print("Date: \(entity.date!)")
-    case .phoneNumber:
-        print("Phone: \(entity.phoneNumber!)")
-    case .link:
-        if let email = entity.url?.absoluteString.replacingOccurrences(of: "mailto:", with: "") {
-            print("Email: \(email)")
-        }
-    default:
-        break
-    }
+for (word, type) in text.partsOfSpeech {
+    print("\(word): \(type)")          // foxes: noun, running: verb, ...
 }
+
+for (word, lemma) in text.lemmas {
+    print("\(word) -> \(lemma)")        // foxes -> fox, running -> run
+}
+
+text.detectedLanguage                   // Optional(NLLanguage.english)
+
+let result = text.sentiment
+print("\(result.sentiment) (\(result.score))")  // "neutral (0.0)"
 ```
 
-### Extract Address Components
+### Addresses
 
 ```swift
-let text = "Apple Park, 1 Apple Park Way, Cupertino, CA 95014"
-let entities = text.dataDetectorEntities
+let text = "Send it to 1 Infinite Loop, Cupertino, CA 95014."
 
-if let address = entities.first(where: { $0.type == .address }) {
-    print("Street: \(address.addressStreet ?? "")")
-    print("City: \(address.addressCity ?? "")")
-    print("State: \(address.addressState ?? "")")
-    print("ZIP: \(address.addressZIP ?? "")")
-    print("Formatted: \(address.formattedAddress ?? "")")
+if let address = text.dataDetectorEntities.first(where: { $0.type == .address }) {
+    print(address.addressStreet ?? "")   // "1 Infinite Loop"
+    print(address.addressCity ?? "")     // "Cupertino"
+    print(address.addressState ?? "")    // "CA"
+    print(address.addressZIP ?? "")      // "95014"
+    print(address.formattedAddress ?? "")
 }
 ```
 
-### Language Detection
+### Static API
 
 ```swift
-let text = "Bonjour le monde"
-let language = text.detectedLanguage
-print(language?.rawValue ?? "Unknown") // "fr"
+let named   = NativeEntityExtractor.extractNamedEntities(from: text)
+let data    = NativeEntityExtractor.extractDataDetectorEntities(from: text)
+let all     = NativeEntityExtractor.extractAllEntities(from: text)
+let pos     = NativeEntityExtractor.extractLexicalClasses(from: text)
+let lemmas  = NativeEntityExtractor.extractLemmas(from: text)
+let lang    = NativeEntityExtractor.detectLanguage(in: text)
+let hyps    = NativeEntityExtractor.languageHypotheses(for: text, maxCount: 3)
+let mood    = NativeEntityExtractor.analyzeSentiment(of: text)
 
-// Get multiple language hypotheses with confidence
-let hypotheses = NativeEntityExtractor.languageHypotheses(for: text, maxCount: 3)
-for (lang, confidence) in hypotheses {
-    print("\(lang.rawValue): \(confidence)")
-}
+// Restrict data-detector types
+let links = NativeEntityExtractor.extractDataDetectorEntities(from: text, types: [.link])
 ```
 
-### Parts of Speech
+## How It Works
 
-```swift
-let text = "The quick brown fox jumps"
-let parts = text.partsOfSpeech
+Named entities and parts of speech come from `NLTagger` (the `.nameType`, `.lexicalClass`, and `.lemma` schemes). Dates, links, phone numbers, addresses, and transit information come from `NSDataDetector`. Language detection uses `NLLanguageRecognizer`, and sentiment uses `NLTagger`'s `.sentimentScore` scheme. `extractAllEntities` merges named and data-detector entities and sorts them by their position in the source text.
 
-for (word, type) in parts {
-    print("\(word): \(type)")
-}
-// The: determiner
-// quick: adjective
-// brown: adjective  
-// fox: noun
-// jumps: verb
+## Models
+
+| Type | Description |
+|------|-------------|
+| `NativeEntity` | `text`, `type`, `range`, plus optional `date`, `timeZone`, `duration`, `url`, `phoneNumber`, `addressComponents`, `transitComponents`; address helpers `addressStreet` / `addressCity` / `addressState` / `addressZIP` / `addressCountry` / `formattedAddress` |
+| `NativeEntityType` | Named (`personalName`, `placeName`, `organizationName`), data-detector (`date`, `link`, `phoneNumber`, `address`, `transitInformation`), and lexical (`noun`, `verb`, `adjective`, `adverb`, `pronoun`, …) cases |
+| `NLTagSchemeType` | Enumerates the available `NLTagger` schemes (token type, lexical class, name type, lemma, language, script, sentiment) |
+
+## Use Cases
+
+- Highlighting people, places, and organizations in user text
+- Extracting structured contact info (phones, addresses, links) from messages
+- On-device language detection and routing
+- Lightweight sentiment scoring for reviews or feedback
+
+## Testing
+
+```bash
+swift test
 ```
 
-### Sentiment Analysis (iOS 13+)
-
-```swift
-if #available(iOS 13.0, *) {
-    let text = "This is absolutely wonderful!"
-    let (score, sentiment) = text.sentiment
-    print("Sentiment: \(sentiment), Score: \(score)")
-    // Sentiment: positive, Score: 0.8
-}
-```
-
-### Lemmatization
-
-```swift
-let text = "The children were running quickly"
-let lemmas = text.lemmas
-
-for (word, lemma) in lemmas {
-    print("\(word) → \(lemma)")
-}
-// children → child
-// were → be
-// running → run
-```
-
-## API Reference
-
-### Entity Types
-
-```swift
-enum NativeEntityType {
-    // Named entities (NLTagger)
-    case personalName
-    case placeName
-    case organizationName
-    
-    // Data detection (NSDataDetector)
-    case date
-    case link  // URLs and emails
-    case phoneNumber
-    case address
-    case transitInformation
-    
-    // Linguistic features
-    case noun, verb, adjective, adverb
-    case pronoun, determiner, particle
-    // ... and more
-}
-```
-
-### Main Functions
-
-- `extractNamedEntities(from:language:)` - Extract people, places, organizations
-- `extractDataDetectorEntities(from:types:)` - Extract dates, URLs, phones, addresses
-- `extractLexicalClasses(from:)` - Get parts of speech
-- `extractLemmas(from:)` - Get base forms of words
-- `detectLanguage(in:)` - Identify language
-- `analyzeSentiment(of:)` - Get sentiment score (iOS 13+)
-
-### String Extensions
-
-```swift
-extension String {
-    var entities: [NativeEntity]  // All entities
-    var namedEntities: [NativeEntity]  // Names only
-    var dataDetectorEntities: [NativeEntity]  // Data only
-    var partsOfSpeech: [(String, NativeEntityType)]
-    var lemmas: [(String, String)]
-    var detectedLanguage: NLLanguage?
-    var sentiment: (Double, String)  // iOS 13+
-}
-```
-
-## What It Extracts
-
-### From NLTagger
-- Personal names
-- Place names
-- Organization names
-- Parts of speech (noun, verb, adjective, etc.)
-- Lemmas (base word forms)
-- Language identification
-- Sentiment scores
-
-### From NSDataDetector
-- Dates (with Date objects, timezone, duration)
-- URLs
-- Email addresses
-- Phone numbers
-- Physical addresses (with components)
-- Transit information (flight numbers)
-
-## Performance
-
-- Native iOS/macOS implementation
-- Optimized for on-device processing
-- No network calls required
-- Thread-safe
-
-## Contributing
-
-Contributions welcome! Please:
-1. Fork the repository
-2. Create your feature branch
-3. Add tests for new functionality
-4. Ensure all tests pass
-5. Submit a pull request
+Tests cover named-entity extraction, data detection, linguistic features, and address parsing.
 
 ## License
 
-MIT License
+MIT License — see LICENSE file for details.
 
 ## Author
 
-Your Name
-
-## Acknowledgments
-
-Built with Apple's Natural Language framework and NSDataDetector.
+Created by David Sherlock ([ArrayPress](https://github.com/arraypress)) in 2026.
