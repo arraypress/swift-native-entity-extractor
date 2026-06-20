@@ -7,41 +7,24 @@
 
 import Foundation
 
+/// The kinds of named entity that `NativeEntityExtractor` can extract.
+///
+/// These map to Apple's two entity-producing engines:
+/// - `NLTagger` with the `.nameType` scheme (people, places, organizations).
+/// - `NSDataDetector` (dates, links, phone numbers, addresses, transit info).
+///
+/// Parts of speech are *not* entities and are represented separately by
+/// ``LexicalClass``.
 public enum NativeEntityType: String, CaseIterable {
-    // NLTagger entities (iOS 12+)
+    // NLTagger name-type entities (iOS 12+ / macOS 10.14+)
     case personalName
     case placeName
     case organizationName
-    
-    // NSDataDetector entities (iOS 4+)
+
+    // NSDataDetector entities (iOS 4+ / macOS 10.7+)
     case date
-    case link  // URLs and email addresses
+    case link  // URLs and email addresses (mailto:)
     case phoneNumber
     case address  // Physical addresses with components
     case transitInformation  // Flight numbers, etc.
-    
-    // Linguistic features (not entities but available)
-    case noun
-    case verb
-    case adjective
-    case adverb
-    case pronoun
-    case determiner
-    case particle
-    case preposition
-    case number
-    case conjunction
-    case interjection
-    case classifier
-    case idiom
-    case otherWord
-    case sentenceTerminator
-    case openQuote
-    case closeQuote
-    case openParenthesis
-    case closeParenthesis
-    case wordJoiner
-    case dash
-    case otherPunctuation
-    case whitespace
 }

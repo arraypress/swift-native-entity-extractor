@@ -220,8 +220,29 @@ final class NativeEntityExtractorTests: XCTestCase {
         }
     }
     
+    func testAddressFullComponentHelpers() {
+        // Business-card-style text populates name/organization/phone alongside
+        // the postal components. Every key should be reachable via a helper.
+        let text = "Tim Cook, Apple Inc, 1 Apple Park Way, Cupertino, CA 95014, (800) 275-2273"
+        let entities = NativeEntityExtractor.extractDataDetectorEntities(from: text)
+
+        if let address = entities.first(where: { $0.type == .address }) {
+            // Whatever NSDataDetector populated must be reachable via the helpers,
+            // i.e. the helper and the raw dictionary must agree for every key.
+            XCTAssertEqual(address.addressName, address.addressComponents?[.name])
+            XCTAssertEqual(address.addressJobTitle, address.addressComponents?[.jobTitle])
+            XCTAssertEqual(address.addressOrganization, address.addressComponents?[.organization])
+            XCTAssertEqual(address.addressStreet, address.addressComponents?[.street])
+            XCTAssertEqual(address.addressCity, address.addressComponents?[.city])
+            XCTAssertEqual(address.addressState, address.addressComponents?[.state])
+            XCTAssertEqual(address.addressZIP, address.addressComponents?[.zip])
+            XCTAssertEqual(address.addressCountry, address.addressComponents?[.country])
+            XCTAssertEqual(address.addressPhone, address.addressComponents?[.phone])
+        }
+    }
+
     // MARK: - Transit Information Tests
-    
+
     func testTransitInformation() {
         let transitTexts = [
             "Flight AA 1234",
@@ -229,13 +250,26 @@ final class NativeEntityExtractorTests: XCTestCase {
             "American Airlines flight 456",
             "Delta 789"
         ]
-        
+
         for transit in transitTexts {
             let entities = NativeEntityExtractor.extractDataDetectorEntities(from: transit)
             let transitEntities = entities.filter { $0.type == .transitInformation }
-            
+
             // Transit detection is unreliable, just check it doesn't crash
             XCTAssertNotNil(transitEntities)
+        }
+    }
+
+    func testTransitComponentHelpers() {
+        // When a transit match is found, airline/flight must be reachable via the
+        // helpers and agree with the raw dictionary.
+        let entities = NativeEntityExtractor.extractDataDetectorEntities(from: "Flight AA 1234")
+
+        if let transit = entities.first(where: { $0.type == .transitInformation }) {
+            XCTAssertEqual(transit.transitAirline, transit.transitComponents?[.airline])
+            XCTAssertEqual(transit.transitFlight, transit.transitComponents?[.flight])
+            // At least one transit component should be populated for a real match.
+            XCTAssertTrue(transit.transitAirline != nil || transit.transitFlight != nil)
         }
     }
     

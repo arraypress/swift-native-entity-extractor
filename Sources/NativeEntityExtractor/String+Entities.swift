@@ -19,7 +19,7 @@ public extension String {
     }
     
     /// Parts of speech
-    var partsOfSpeech: [(text: String, type: NativeEntityType)] {
+    var partsOfSpeech: [(text: String, type: LexicalClass)] {
         NativeEntityExtractor.extractLexicalClasses(from: self)
     }
     

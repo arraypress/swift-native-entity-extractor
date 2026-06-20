@@ -89,6 +89,12 @@ if let address = text.dataDetectorEntities.first(where: { $0.type == .address })
 }
 ```
 
+Every component `NSDataDetector` can populate is reachable via a helper —
+`addressName`, `addressJobTitle`, `addressOrganization`, `addressStreet`,
+`addressCity`, `addressState`, `addressZIP`, `addressCountry`, `addressPhone` —
+or via the raw `addressComponents` dictionary. Transit matches expose
+`transitAirline` / `transitFlight` (and the raw `transitComponents`).
+
 ### Static API
 
 ```swift
@@ -113,8 +119,9 @@ Named entities and parts of speech come from `NLTagger` (the `.nameType`, `.lexi
 
 | Type | Description |
 |------|-------------|
-| `NativeEntity` | `text`, `type`, `range`, plus optional `date`, `timeZone`, `duration`, `url`, `phoneNumber`, `addressComponents`, `transitComponents`; address helpers `addressStreet` / `addressCity` / `addressState` / `addressZIP` / `addressCountry` / `formattedAddress` |
-| `NativeEntityType` | Named (`personalName`, `placeName`, `organizationName`), data-detector (`date`, `link`, `phoneNumber`, `address`, `transitInformation`), and lexical (`noun`, `verb`, `adjective`, `adverb`, `pronoun`, …) cases |
+| `NativeEntity` | `text`, `type`, `range`, plus optional `date`, `timeZone`, `duration`, `url`, `phoneNumber`, `addressComponents`, `transitComponents`; address helpers `addressName` / `addressJobTitle` / `addressOrganization` / `addressStreet` / `addressCity` / `addressState` / `addressZIP` / `addressCountry` / `addressPhone` / `formattedAddress`; transit helpers `transitAirline` / `transitFlight` |
+| `NativeEntityType` | The entity kinds only: named (`personalName`, `placeName`, `organizationName`) and data-detector (`date`, `link`, `phoneNumber`, `address`, `transitInformation`) |
+| `LexicalClass` | Parts of speech returned by `extractLexicalClasses` / `partsOfSpeech` (`noun`, `verb`, `adjective`, `adverb`, `pronoun`, `determiner`, …) — kept separate from entities |
 | `NLTagSchemeType` | Enumerates the available `NLTagger` schemes (token type, lexical class, name type, lemma, language, script, sentiment) |
 
 ## Use Cases

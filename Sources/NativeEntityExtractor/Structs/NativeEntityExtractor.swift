@@ -77,12 +77,12 @@ public struct NativeEntityExtractor {
     /// Extract lexical classes (parts of speech)
     public static func extractLexicalClasses(
         from text: String
-    ) -> [(text: String, type: NativeEntityType)] {
+    ) -> [(text: String, type: LexicalClass)] {
         let tagger = NLTagger(tagSchemes: [.lexicalClass])
         tagger.string = text
-        
-        var results: [(String, NativeEntityType)] = []
-        
+
+        var results: [(String, LexicalClass)] = []
+
         tagger.enumerateTags(
             in: text.startIndex..<text.endIndex,
             unit: .word,
@@ -90,32 +90,32 @@ public struct NativeEntityExtractor {
             options: [.omitWhitespace, .omitPunctuation]
         ) { tag, range in
             if let tag = tag {
-                let entityType: NativeEntityType?
+                let lexicalClass: LexicalClass?
                 switch tag {
-                case .noun: entityType = .noun
-                case .verb: entityType = .verb
-                case .adjective: entityType = .adjective
-                case .adverb: entityType = .adverb
-                case .pronoun: entityType = .pronoun
-                case .determiner: entityType = .determiner
-                case .particle: entityType = .particle
-                case .preposition: entityType = .preposition
-                case .number: entityType = .number
-                case .conjunction: entityType = .conjunction
-                case .interjection: entityType = .interjection
-                case .classifier: entityType = .classifier
-                case .idiom: entityType = .idiom
-                case .otherWord: entityType = .otherWord
-                default: entityType = nil
+                case .noun: lexicalClass = .noun
+                case .verb: lexicalClass = .verb
+                case .adjective: lexicalClass = .adjective
+                case .adverb: lexicalClass = .adverb
+                case .pronoun: lexicalClass = .pronoun
+                case .determiner: lexicalClass = .determiner
+                case .particle: lexicalClass = .particle
+                case .preposition: lexicalClass = .preposition
+                case .number: lexicalClass = .number
+                case .conjunction: lexicalClass = .conjunction
+                case .interjection: lexicalClass = .interjection
+                case .classifier: lexicalClass = .classifier
+                case .idiom: lexicalClass = .idiom
+                case .otherWord: lexicalClass = .otherWord
+                default: lexicalClass = nil
                 }
-                
-                if let entityType = entityType {
-                    results.append((String(text[range]), entityType))
+
+                if let lexicalClass = lexicalClass {
+                    results.append((String(text[range]), lexicalClass))
                 }
             }
             return true
         }
-        
+
         return results
     }
     
@@ -217,11 +217,11 @@ public struct NativeEntityExtractor {
                     duration: nil,
                     url: nil,
                     phoneNumber: nil,
-                    addressComponents: match.addressComponents,
+                    addressComponents: match.components,
                     transitComponents: nil
                 )
                 results.append(entity)
-                
+
             case .transitInformation:
                 let entity = NativeEntity(
                     text: matchedText,
